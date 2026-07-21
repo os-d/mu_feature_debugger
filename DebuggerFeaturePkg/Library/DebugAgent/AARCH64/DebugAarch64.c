@@ -30,6 +30,17 @@
 
 #define DAIF_DEBUG  0x200
 
+//
+// MDCR_EL2.TDE routes debug exceptions (including software step) to EL2. This
+// is required for self-hosted debug when running at EL2 (e.g. with VHE/E2H
+// enabled); otherwise a debug exception taken from EL2 would target EL1 and be
+// disabled, causing single step to silently do nothing.
+//
+#define MDCR_TDE  0x100
+
+// CurrentEL reports the Exception level in bits [3:2]; EL2 is encoded as 0x8.
+#define CURRENT_EL_EL2  0x8
+
 typedef union _DBG_WCR {
   struct {
     UINTN    Enabled : 1;
@@ -296,6 +307,16 @@ DebugArchInit (
   Value  = DebugReadMdscrEl1 ();
   Value |= (MDSCR_MDE | MDSCR_KDE);
   DebugWriteMdscrEl1 (Value);
+
+  // When running at EL2 (e.g. with VHE/E2H enabled), debug exceptions must be
+  // routed to EL2 via MDCR_EL2.TDE. Without this, software step exceptions
+  // taken from EL2 would target EL1, which is a lower EL, and therefore be
+  // disabled by the architecture.
+  if (DebugReadCurrentEl () >= CURRENT_EL_EL2) {
+    Value  = DebugReadMdcrEl2 ();
+    Value |= MDCR_TDE;
+    DebugWriteMdcrEl2 (Value);
+  }
 
   // Clear watchpoints.
   for (Index = 0; Index < MAX_WATCHPOINTS; Index++) {

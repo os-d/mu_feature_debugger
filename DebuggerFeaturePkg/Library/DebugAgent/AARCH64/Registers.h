@@ -40,6 +40,21 @@ DebugWriteOslarEl1 (
   );
 
 UINT64
+DebugReadCurrentEl (
+  VOID
+  );
+
+UINT64
+DebugReadMdcrEl2 (
+  VOID
+  );
+
+VOID
+DebugWriteMdcrEl2 (
+  IN UINT64  Value
+  );
+
+UINT64
 DebugGetTCR (
   VOID
   );

@@ -16,6 +16,9 @@ GCC_ASM_EXPORT(DebugReadOslsrEl1)
 GCC_ASM_EXPORT(DebugWriteOslarEl1)
 GCC_ASM_EXPORT(DebugReadDaif)
 GCC_ASM_EXPORT(DebugWriteDaif)
+GCC_ASM_EXPORT(DebugReadCurrentEl)
+GCC_ASM_EXPORT(DebugReadMdcrEl2)
+GCC_ASM_EXPORT(DebugWriteMdcrEl2)
 GCC_ASM_EXPORT(DebugGetTCR)
 GCC_ASM_EXPORT(DebugGetTTBR0BaseAddress)
 GCC_ASM_EXPORT(DebugReadDbgWvr0El1)
@@ -57,6 +60,33 @@ ASM_PFX(DebugReadDaif):
 
 ASM_PFX(DebugWriteDaif):
     msr daif, x0
+    ret
+
+ASM_PFX(DebugReadCurrentEl):
+    mrs x0, CurrentEL
+    ret
+
+# Reads MDCR_EL2. Returns 0 when executing below EL2 since the register is
+# inaccessible there.
+ASM_PFX(DebugReadMdcrEl2):
+    mrs x1, CurrentEL
+    cmp x1, #0x8
+    blt 1f
+    mrs x0, mdcr_el2
+    ret
+1:
+    mov x0, #0
+    ret
+
+# Writes MDCR_EL2. No-op when executing below EL2 since the register is
+# inaccessible there.
+ASM_PFX(DebugWriteMdcrEl2):
+    mrs x1, CurrentEL
+    cmp x1, #0x8
+    blt 1f
+    msr mdcr_el2, x0
+    isb
+1:
     ret
 
 ASM_PFX(DebugGetTCR):
